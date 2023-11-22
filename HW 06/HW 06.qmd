@@ -1,0 +1,36 @@
+---
+title: "HW 06"
+author: "Yu-Chia Huang (PID: A59026739)"
+format: pdf
+---
+## Q6. How would you generalize the original code above to work with any set of input protein structures?
+
+*First to load the bio3d package using `library()`.*
+
+```{r}
+library(bio3d)
+```
+
+*Below is the code for creating the new function to plot Bfactor for a PDB structure.*
+
+```{r}
+#Enter the name of the protein (PDB ID) in x
+Bfar.plot <- function(x) {
+  #Read in PDB file
+  s1 <- read.pdb(x)
+  #Extract CA atoms from chain A
+  s1.chainA <- trim.pdb(s1, chain = "A", elety = "CA")
+  #Get Bfactor data for each chain
+  s1.b <- s1.chainA$atom$b
+  #Plot Bfactor profile
+  plotb3(s1.b, sse = s1.chainA, typ = "l", ylab = "Bfactor")
+}
+```
+
+*Now we can plot each Bfactor for PDB structure using `Bfar.plot` function.*
+
+```{r}
+Bfar.plot("4AKE")
+Bfar.plot("1AKE")
+Bfar.plot("1E4Y")
+```
