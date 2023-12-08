@@ -1,0 +1,254 @@
+---
+title: "Class 10 Halloween"
+author: "Yu-Chia Huang (PID: A59026739)"
+format: pdf
+---
+
+##Importing candy data
+```{r}
+candy <- read.csv("candy-data.csv", row.names = 1)
+head(candy)
+```
+
+> Q1. How many different candy types are in this dataset?
+
+```{r}
+nrow(candy)
+```
+
+There are `r nrow(candy)`.
+
+> Q2. How many fruity candy types are in the dataset?
+
+```{r}
+sum(candy$fruity)
+```
+
+```{r}
+candy[as.logical(candy$fruity),]
+```
+
+##2. What is your favorate candy?
+
+>Q3. What is your favorite candy in the dataset and what is it’s winpercent value?
+
+```{r}
+candy["Hershey's Kisses",]$winpercent
+```
+
+>Q4. What is the winpercent value for “Kit Kat”?
+
+```{r}
+candy["Kit Kat",]$winpercent
+```
+
+>Q5. What is the winpercent value for “Tootsie Roll Snack Bars”?
+
+```{r}
+candy["Tootsie Roll Snack Bars",]$winpercent
+```
+
+##Side-note: the skimr::skim() function
+
+#Use :: then we can do the same thing (install the package and call it).
+#install.packages("skimr")
+#library("skimr")
+
+```{r}
+skimr::skim(candy)
+```
+
+>Q6. Is there any variable/column that looks to be on a different scale to the majority of the other columns in the dataset?
+
+Sure is, Winpercent.
+
+>Q7. What do you think a zero and one represent for the candy$chocolate column?
+
+```{r}
+candy$chocolate
+```
+It represents whether each candy is chocolate (1) or not chocolate(0).
+
+>Q8. Plot a histogram of winpercent values
+
+```{r}
+hist(candy$winpercent)
+```
+
+>Q9. Is the distribution of winpercent values symmetrical?
+
+No. It's not symmetrical.
+
+>Q10. Is the center of the distribution above or below 50%?
+
+```{r}
+choc.ind <- as.logical(candy$chocolate)
+fruit.ind <- as.logical(candy$fruity)
+
+choc.win <- candy[choc.ind,]$winpercent
+fruit.win  <- candy[fruit.ind,]$winpercent
+
+mean(candy$winpercent)
+```
+It's above 50%.
+
+>Q11. On average is chocolate candy higher or lower ranked than fruit candy?
+
+```{r}
+mean(choc.win)
+mean(fruit.win)
+```
+Chocolate is higher ranked than fruit candy.
+
+>Q12. Is this difference statistically significant?
+
+```{r}
+t.test(choc.win, fruit.win)
+```
+
+Yes. The p-value is 2.871e-08. We can reject the null hypothesis.
+
+##3. Overall Candy Rankings
+>Q13. What are the five least liked candy types in this set?
+
+```{r}
+x <- c(5,2,3,6)
+sort(x)
+sort(x, decreasing = T)
+```
+
+```{r}
+x
+order(x)
+```
+
+```{r}
+x[order(x)]
+```
+
+```{r}
+y <- c("D", "A", "E")
+order(y)
+```
+
+```{r}
+inds <- order(candy$winpercent)
+head(candy[inds,], 5)
+```
+
+>Q14. What are the top 5 all time favorite candy types out of this set?
+
+```{r}
+inds <- order(candy$winpercent, decreasing = T)
+head(candy[inds,], 5)
+```
+
+>Q15. Make a first barplot of candy ranking based on winpercent values.
+
+```{r}
+library("ggplot2")
+ggplot(candy) +
+  aes(winpercent, rownames(candy)) +
+  geom_col()
+```
+
+>Q16. This is quite ugly, use the reorder() function to get the bars sorted by winpercent?
+
+```{r}
+ggplot(candy) +
+  aes(winpercent, reorder(rownames(candy), winpercent)) +
+  geom_col()
+```
+
+##Time to add some useful color
+Let's color up these candy up by some scheme.
+
+```{r}
+mycols <- rep("black", nrow(candy))
+mycols[as.logical(candy$chocolate)] <- "chocolate"
+mycols[as.logical(candy$bar)] <- "brown"
+mycols[as.logical(candy$fruity)] <- "pink"
+
+ggplot(candy) +
+  aes(winpercent, reorder(rownames(candy), winpercent)) +
+  geom_col(bg=mycols)
+```
+
+Now, for the first time, using this plot we can answer questions like:
+
+>Q17. What is the worst ranked chocolate candy?
+
+Sixlets is the worst ranked chocolate candy.
+
+>Q18. What is the best ranked fruity candy?
+
+Starburst is the best ranked fruity candy.
+
+##4. Taking a look at pricepercent
+
+>Q19. Which candy type is the highest ranked in terms of winpercent for the least money - i.e. offers the most bang for your buck?
+
+
+```{r}
+#install.packages("ggrepel")
+```
+
+```{r}
+library("ggrepel")
+library("ggplot2")
+# How about a plot of price vs win
+ggplot(candy) +
+  aes(winpercent, pricepercent, label=rownames(candy)) +
+  geom_point(col=mycols) + 
+  geom_text_repel(col=mycols, size=3.3, max.overlaps = 5)
+```
+
+Reese's Miniatures.
+
+```{r}
+ord <- order(candy$pricepercent, decreasing = FALSE)
+head( candy[ord,c(11,12)], n=5 )
+```
+
+>Q20. What are the top 5 most expensive candy types in the dataset and of these which is the least popular?
+
+Nik L Ni, Ring pop, Nestle Smarties, Pop Rocks, Sugar Babies.
+
+```{r}
+ord <- order(candy$pricepercent, decreasing = TRUE)
+head( candy[ord,c(11,12)], n=5 )
+```
+
+
+Optional
+>Q21. Make a barplot again with geom_col() this time using pricepercent and then improve this step by step, first ordering the x-axis by value and finally making a so called “dot chat” or “lollipop” chart by swapping geom_col() for geom_point() + geom_segment().
+
+
+
+##5 Exploring the correlation structure
+# Correlation structure
+
+```{r}
+library("corrplot")
+cij <- cor(candy)
+corrplot(cij)
+```
+
+>Q22. Examining this plot what two variables are anti-correlated (i.e. have minus values)?
+
+>Q23. Similarly, what two variables are most positively correlated?
+
+##6. Principal Component Analysis
+
+```{r}
+pca <- prcomp(candy,scale=TRUE)
+summary(pca)
+```
+
+```{r}
+plot(pca$x[,1:2])
+```
+
+```{r}
+plot(pca$x[,1:2], col=mycols, pch=16)
+```
