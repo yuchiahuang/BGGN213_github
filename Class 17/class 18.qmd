@@ -1,0 +1,118 @@
+---
+title: "Lab18 Analyzing sequencing data in the cloud"
+author: "Yu-Chia Huang (PID: A59026739)"
+format: pdf
+---
+```{r}
+#BiocManager::install("tximport")
+```
+
+```{r}
+#BiocManager::install("rhdf5")
+```
+
+
+```{r}
+library(tximport)
+library(rhdf5)
+```
+
+```{r}
+folders <- dir(pattern="SRR21568*")
+samples <- sub("_quant", "", folders)
+files <- file.path( folders, "abundance.h5" )
+names(files) <- samples
+
+txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+```
+
+```{r}
+head(txi.kallisto$counts)
+```
+>We now have our estimated transcript counts for each sample in R. We can see how many transcripts we have for each sample:
+
+```{r}
+colSums(txi.kallisto$counts)
+```
+
+>And how many transcripts are detected in at least one sample:
+
+```{r}
+sum(rowSums(txi.kallisto$counts)>0)
+```
+
+>To filter out those annotated transcripts with no reads:
+
+```{r}
+to.keep <- rowSums(txi.kallisto$counts) > 0
+kset.nonzero <- txi.kallisto$counts[to.keep,]
+```
+
+>And those with no change over the samples:
+
+```{r}
+keep2 <- apply(kset.nonzero,1,sd)>0
+x <- kset.nonzero[keep2,]
+```
+
+##PCA
+
+```{r}
+pca <- prcomp(t(x), scale=TRUE)
+```
+
+```{r}
+summary(pca)
+```
+PC1 vs. PC2
+
+```{r}
+plot(pca$x[,1], pca$x[,2],
+     col=c("blue","blue","red","red"),
+     xlab="PC1", ylab="PC2", pch=16)
+```
+
+PC1 vs. PC3
+
+```{r}
+plot(pca$x[,1], pca$x[,3],
+     col=c("blue","blue","red","red"),
+     xlab="PC1", ylab="PC3", pch=16)
+```
+
+PC2 vs. PC3
+
+```{r}
+plot(pca$x[,2], pca$x[,3],
+     col=c("blue","blue","red","red"),
+     xlab="PC2", ylab="PC3", pch=16)
+```
+
+
+>To make prettier figure with ggplot:
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+```
+
+```{r}
+# Make metadata object for the samples
+colData <- data.frame(condition = factor(rep(c("control", "treatment"), each = 2)))
+rownames(colData) <- colnames(txi.kallisto$counts)
+```
+
+```{r}
+# Make the data.frame for ggplot 
+y <- as.data.frame(pca$x)
+y$Condition <- as.factor(colData$condition)
+```
+
+```{r}
+ggplot(y) + 
+  aes(PC1, PC2, col=Condition) +
+  geom_point() +
+  geom_text_repel(label=rownames(y)) +
+  theme_bw()
+```
+
